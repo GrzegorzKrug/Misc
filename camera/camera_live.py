@@ -2,9 +2,10 @@ from tkinter import (
     Frame, Grid,
     N, S, W, E,
     Button, Label)
+from PIL import Image, ImageTk
+from tkinter import messagebox
 
 import tkinter as tk
-from tkinter import messagebox
 
 LARGE_FONT = ("Verdana", 12)
 
@@ -47,6 +48,8 @@ if __name__ == "__main__":
         for c in range(8):
             if (r, c) in buttons:
                 continue
+            elif 0 <= r < 5 and 4 < c < 8:
+                continue
             padx = 5
             pady = 2
             Label(frame, text=f"R_{r} C_{c}", relief='solid', borderwidth=2).grid(row=r, column=c, sticky='nwse',
@@ -62,6 +65,11 @@ if __name__ == "__main__":
     add_button(frame, 'Green', 'green', row=2, col=2, sticky="nwse").configure(command=hello_world)
     add_button(frame, 'Black', 'black', row=2, col=3, sticky="nwse").grid(rowspan=2)
     add_button(frame, 'Red', 'red', row=3, col=2, sticky="nwse")
+
+    im = Image.open('cat.jpeg')
+    render = ImageTk.PhotoImage(im)
+    img = Label(frame, image=render)
+    img.grid(row=0, column=5, rowspan=5, columnspan=3)
 
     # Grid.rowconfigure(frame, 0, weight=1)
     # Grid.columnconfigure(frame, 0, weight=1)
