@@ -1,24 +1,74 @@
 from tkinter import (
-    Frame, Grid,
-    N, S, W, E,
+    Frame, Grid, Canvas,
     Button, Label)
 from PIL import Image, ImageTk
 from tkinter import messagebox
-
+from collections import deque
 import tkinter as tk
+import time
+import cv2
 
 LARGE_FONT = ("Verdana", 12)
 
 
-class Window(Frame):
-    def __init__(self, master=None, pack_side=None):
-        super().__init__(master)
+class CameraWindow(Frame):
+    def __init__(self, root=0, video_source=None):
+        Frame.__init__(self)
+        self.root = root
+        self.cam = video_source
+        self.pic = Canvas(root, width=1000, height=800)
+        self.pic.pack(side='top', fill='both', expand=True)
 
-        # self.master = master
+        self.memory = deque(maxlen=30 * 10)
+        button_frame = Frame(root)
+        button_frame.pack(fill='both', expand=True)
 
-        hei = Frame.winfo_height(self)
-        wid = Frame.winfo_width(self)
-        self.pack(side=pack_side)
+        add_button(button_frame, f'{0 + 1}', 'black', row=0, col=0, sticky="wse").configure(
+                command=lambda: print(0 + 1))
+        add_button(button_frame, f'{1 + 1}', 'black', row=0, col=1, sticky="wse").configure(
+                command=lambda: print(1 + 1))
+        add_button(button_frame, f'{2 + 1}', 'black', row=0, col=2, sticky="wse").configure(
+                command=lambda: print(2 + 1))
+        add_button(button_frame, f'{3 + 1}', 'black', row=0, col=3, sticky="wse").configure(
+                command=lambda: print(3 + 1))
+        add_button(button_frame, f'{4 + 1}', 'black', row=0, col=4, sticky="wse").configure(
+                command=lambda: print(4 + 1))
+        add_button(button_frame, f'{5 + 1}', 'black', row=0, col=5, sticky="wse").configure(
+                command=lambda: print(5 + 1))
+        add_button(button_frame, f'{6 + 1}', 'black', row=0, col=6, sticky="wse").configure(
+                command=lambda: print(6 + 1))
+        add_button(button_frame, f'{7 + 1}', 'black', row=0, col=7, sticky="wse").configure(
+                command=lambda: print(7 + 1))
+        add_button(button_frame, f'{8 + 1}', 'black', row=0, col=8, sticky="wse").configure(
+                command=lambda: print(8 + 1))
+        add_button(button_frame, f'{9 + 1}', 'black', row=0, col=9, sticky="wse").configure(
+                command=lambda: print(9 + 1))
+
+        for _col in range(10):
+            button_frame.grid_columnconfigure(_col, weight=1)
+
+        button_frame.grid_rowconfigure(0, weight=1)
+
+        self.update()
+
+    def set_size(self, width, height):
+        self.pic.configure(width=width, height=height)
+
+    def start_show(self, video_source):
+        print("Starting")
+        self.cam = video_source
+        # self.root.mainloop()
+
+    def update(self):
+        ret, frame = self.cam.get_frame()
+        # if ret:
+        im = Image.fromarray(frame)
+        # im = Image.open('cat.jpeg')
+        photo = ImageTk.PhotoImage(image=im)
+        self.memory.append(photo)
+        self.pic.create_image(0, 0, image=photo, anchor='nw')
+        # self.frame.update()
+        self.root.after(10, self.update)
 
 
 def add_button(_frame, text, fg, side=None, fill=None,
@@ -30,56 +80,101 @@ def add_button(_frame, text, fg, side=None, fill=None,
     return but
 
 
-def hello_world():
-    messagebox.showinfo("Hello")
+def hello_world(text=None):
+    if text:
+        messagebox.showinfo('Msg', "Hello " + str(text))
+    else:
+        messagebox.showinfo('Msg', "Hello")
+
+
+class MyCameraCapture:
+    def __init__(self, video_source=0):
+        print(f"Opened camera src")
+
+        self.vid = cv2.VideoCapture(video_source)
+        if not self.vid.isOpened():
+            raise ValueError("Unable to open video source", video_source)
+
+        # Get video source width and height
+        self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    def get_frame(self):
+        if self.vid.isOpened():
+            ret, frame = self.vid.read()
+            if ret:
+                # Return a boolean success flag and the current frame converted to BGR
+                return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            else:
+                return ret, None
+        else:
+            return None, None
+
+    # Release the video source when the object is destroyed
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
+
+    def __del__(self):
+        print(f"deleting")
+        if self.vid.isOpened():
+            self.vid.release()
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root2 = tk.Tk()
+    # root = tk.Tk()
+    #
+    # frame = Frame(root)
+    # frame.pack(expand=True, fill='both', side='top')
+    #
+    #
+    # line = Frame(root)
+    # line.pack(fill='both', expand=True)
+    #
+    # buttons = {(2, 1), (2, 2), (2, 3), (3, 2)}
+    # for r in range(8):
+    #     for c in range(10):
+    #         if (r, c) in buttons:
+    #             continue
+    #         elif 0 <= r < 5 and 4 < c < 8:
+    #             continue
+    #         padx = 5
+    #         pady = 2
+    #         Label(frame, text=f"R_{r} C_{c}", relief='solid', borderwidth=2).grid(row=r, column=c, sticky='nwse',
+    #                                                                               ipadx=padx, ipady=pady)
+    #
+    # for x in range(8):
+    #     Grid.columnconfigure(frame, x, weight=1)
+    #
+    # for y in range(10):
+    #     Grid.rowconfigure(frame, y, weight=1)
+    #
+    # add_button(frame, 'Blue', 'blue', row=2, col=1, sticky="nwse").grid(rowspan=2)
+    # add_button(frame, 'Green', 'green', row=2, col=2, sticky="nwse").configure(command=hello_world)
+    # add_button(frame, 'Black', 'black', row=2, col=3, sticky="nwse").grid(rowspan=2)
+    # add_button(frame, 'Red', 'red', row=3, col=2, sticky="nwse")
+    #
+    # im = Image.open('cat.jpeg')
+    # render = ImageTk.PhotoImage(im)
+    # img = Label(frame, image=render)
+    # img.grid(row=0, column=5, rowspan=5, columnspan=3)
 
-    frame = Frame()
-    frame.pack(expand=True, fill='both')
-    # Grid.columnconfigure(root, 0, weight=1)
+    with MyCameraCapture() as c1:
+        cam_win = CameraWindow(root2, c1)
+        width, height = c1.width, c1.height
+        cam_win.set_size(width=width, height=height)
+        cam_win.cam = c1
+        # cam_win.update()
+        root2.mainloop()
 
-    # frame.grid_rowconfigure(0, weight=1)
-    # frame.grid_columnconfigure(0, weight=1)
-    buttons = {(2, 1), (2, 2), (2, 3), (3, 2)}
-    for r in range(8):
-        for c in range(8):
-            if (r, c) in buttons:
-                continue
-            elif 0 <= r < 5 and 4 < c < 8:
-                continue
-            padx = 5
-            pady = 2
-            Label(frame, text=f"R_{r} C_{c}", relief='solid', borderwidth=2).grid(row=r, column=c, sticky='nwse',
-                                                                                  ipadx=padx, ipady=pady)
+    # for x in range(3):
+    #     ret, frame = c1.get_frame()
+    #     im = Image.fromarray(frame)
+    #     im.show()
+    #     time.sleep(0.1)
+    #     im.terminate()
 
-    for x in range(8):
-        Grid.columnconfigure(frame, x, weight=1)
-
-    for y in range(8):
-        Grid.rowconfigure(frame, y, weight=1)
-
-    add_button(frame, 'Blue', 'blue', row=2, col=1, sticky="nwse").grid(rowspan=2)
-    add_button(frame, 'Green', 'green', row=2, col=2, sticky="nwse").configure(command=hello_world)
-    add_button(frame, 'Black', 'black', row=2, col=3, sticky="nwse").grid(rowspan=2)
-    add_button(frame, 'Red', 'red', row=3, col=2, sticky="nwse")
-
-    im = Image.open('cat.jpeg')
-    render = ImageTk.PhotoImage(im)
-    img = Label(frame, image=render)
-    img.grid(row=0, column=5, rowspan=5, columnspan=3)
-
-    # Grid.rowconfigure(frame, 0, weight=1)
-    # Grid.columnconfigure(frame, 0, weight=1)
-    # Grid.rowconfigure(frame, 1, weight=1)
-    # Grid.columnconfigure(frame, 1, weight=1)
-
-    # frame.grid(row=0, column=0, sticky="n")
-    # lower_frame.grid(row=0, column=0, sticky=N + S + E + W)
-    # grid = Frame(frame)
-
-    # grid.grid(sticky=N + S + E + W, column=0, row=7, columnspan=2)
-
-    root.mainloop()
+    # frame.mainloop()
