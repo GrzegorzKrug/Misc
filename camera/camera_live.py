@@ -125,11 +125,13 @@ class MyCameraCapture:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.title("Main window")
+
     root2 = tk.Toplevel()
+    root2.title("Camera")
 
     frame = Frame(root)
     frame.pack(expand=True, fill='both', side='top')
-
 
     line = Frame(root)
     line.pack(fill='both', expand=True)
