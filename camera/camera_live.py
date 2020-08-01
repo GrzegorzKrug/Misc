@@ -124,43 +124,43 @@ class MyCameraCapture:
 
 
 if __name__ == "__main__":
-    root2 = tk.Tk()
-    # root = tk.Tk()
-    #
-    # frame = Frame(root)
-    # frame.pack(expand=True, fill='both', side='top')
-    #
-    #
-    # line = Frame(root)
-    # line.pack(fill='both', expand=True)
-    #
-    # buttons = {(2, 1), (2, 2), (2, 3), (3, 2)}
-    # for r in range(8):
-    #     for c in range(10):
-    #         if (r, c) in buttons:
-    #             continue
-    #         elif 0 <= r < 5 and 4 < c < 8:
-    #             continue
-    #         padx = 5
-    #         pady = 2
-    #         Label(frame, text=f"R_{r} C_{c}", relief='solid', borderwidth=2).grid(row=r, column=c, sticky='nwse',
-    #                                                                               ipadx=padx, ipady=pady)
-    #
-    # for x in range(8):
-    #     Grid.columnconfigure(frame, x, weight=1)
-    #
-    # for y in range(10):
-    #     Grid.rowconfigure(frame, y, weight=1)
-    #
-    # add_button(frame, 'Blue', 'blue', row=2, col=1, sticky="nwse").grid(rowspan=2)
-    # add_button(frame, 'Green', 'green', row=2, col=2, sticky="nwse").configure(command=hello_world)
-    # add_button(frame, 'Black', 'black', row=2, col=3, sticky="nwse").grid(rowspan=2)
-    # add_button(frame, 'Red', 'red', row=3, col=2, sticky="nwse")
-    #
-    # im = Image.open('cat.jpeg')
-    # render = ImageTk.PhotoImage(im)
-    # img = Label(frame, image=render)
-    # img.grid(row=0, column=5, rowspan=5, columnspan=3)
+    root = tk.Tk()
+    root2 = tk.Toplevel()
+
+    frame = Frame(root)
+    frame.pack(expand=True, fill='both', side='top')
+
+
+    line = Frame(root)
+    line.pack(fill='both', expand=True)
+
+    buttons = {(2, 1), (2, 2), (2, 3), (3, 2)}
+    for r in range(8):
+        for c in range(10):
+            if (r, c) in buttons:
+                continue
+            elif 0 <= r < 5 and 4 < c < 8:
+                continue
+            padx = 5
+            pady = 2
+            Label(frame, text=f"R_{r} C_{c}", relief='solid', borderwidth=2).grid(row=r, column=c, sticky='nwse',
+                                                                                  ipadx=padx, ipady=pady)
+
+    for x in range(8):
+        Grid.columnconfigure(frame, x, weight=1)
+
+    for y in range(10):
+        Grid.rowconfigure(frame, y, weight=1)
+
+    add_button(frame, 'Blue', 'blue', row=2, col=1, sticky="nwse").grid(rowspan=2)
+    add_button(frame, 'Green', 'green', row=2, col=2, sticky="nwse").configure(command=hello_world)
+    add_button(frame, 'Black', 'black', row=2, col=3, sticky="nwse").grid(rowspan=2)
+    add_button(frame, 'Red', 'red', row=3, col=2, sticky="nwse")
+
+    im = Image.open('cat.jpeg')
+    render = ImageTk.PhotoImage(im)
+    img = Label(frame, image=render)
+    img.grid(row=0, column=5, rowspan=5, columnspan=3)
 
     with MyCameraCapture() as c1:
         cam_win = CameraWindow(root2, c1)
