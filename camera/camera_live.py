@@ -18,13 +18,15 @@ class CameraWindow(Frame):
         self.cam = video_source
         self.pic = Canvas(root, width=1000, height=800)
         self.pic.pack(side='top', fill='both', expand=True)
-
         self.memory = deque(maxlen=30 * 10)
+
+        self.config = {'gray': False}
+
         button_frame = Frame(root)
         button_frame.pack(fill='both', expand=True)
 
-        add_button(button_frame, f'{0 + 1}', 'black', row=0, col=0, sticky="wse").configure(
-                command=lambda: print(0 + 1))
+        add_button(button_frame, f'GrayScale', 'black', row=0, col=0, sticky="wse").configure(
+                command=lambda: self.toggle_config('grayscale'))
         add_button(button_frame, f'{1 + 1}', 'black', row=0, col=1, sticky="wse").configure(
                 command=lambda: print(1 + 1))
         add_button(button_frame, f'{2 + 1}', 'black', row=0, col=2, sticky="wse").configure(
@@ -51,24 +53,31 @@ class CameraWindow(Frame):
 
         self.update()
 
+    def toggle_config(self, param):
+        if param == 'grayscale':
+            self.config.update({'gray': self.config['gray'] ^ True})
+            print(f"Grayscale is now: {self.config['gray']}")
+
     def set_size(self, width, height):
         self.pic.configure(width=width, height=height)
 
-    def start_show(self, video_source):
-        print("Starting")
-        self.cam = video_source
-        # self.root.mainloop()
-
     def update(self):
         ret, frame = self.cam.get_frame()
-        # if ret:
-        im = Image.fromarray(frame)
-        # im = Image.open('cat.jpeg')
-        photo = ImageTk.PhotoImage(image=im)
+        photo = self.process_image(frame)
         self.memory.append(photo)
         self.pic.create_image(0, 0, image=photo, anchor='nw')
-        # self.frame.update()
         self.root.after(10, self.update)
+
+    def process_image(self, image):
+        """Returns Tkinter Canvas photo object"""
+        if self.config['gray']:
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        else:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        image = Image.fromarray(image)
+        photo = ImageTk.PhotoImage(image=image)
+        return photo
 
 
 def add_button(_frame, text, fg, side=None, fill=None,
@@ -104,7 +113,7 @@ class MyCameraCapture:
             ret, frame = self.vid.read()
             if ret:
                 # Return a boolean success flag and the current frame converted to BGR
-                return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                return ret, frame
             else:
                 return ret, None
         else:
