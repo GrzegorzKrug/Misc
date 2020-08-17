@@ -1,4 +1,6 @@
+import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import warnings
 import re
@@ -168,27 +170,88 @@ class DecisionTree:
 
     def build_hierarchy(self):
         print(f"Building hierarchy")
-        nodes = {key: set() for key in self.tree.keys()}
+        nodes = {key: {'visited': 0, 'childs': set(), 'parents': set()}
+                 for key in self.tree.keys()}
+        roots = set(self.tree.keys())
 
         for name, rules in self.tree.items():
-            print(name)
+            "Removing non roots from roots, creating child, parent relations"
             for rul in rules:
                 _next = rul.get('next', None)
                 if _next:
-                    parents = nodes.get(_next)
+                    this_node = nodes.get(name)
+                    childs = this_node.get('childs')
+                    childs.add(_next)
+                    this_node.update({'childs': childs})
+                    nodes.update({name: this_node})
+
+                    child_node = nodes.get(_next)
+                    parents = child_node.get('parents')
                     parents.add(name)
-                    nodes.update({_next: parents})
+                    child_node.update({'parents': parents})
+                    nodes.update({_next: child_node})
+
+                    if _next in roots:
+                        roots.remove(_next)
 
             fail_outcome = self.fail.get(name, None)
             if fail_outcome:
                 _next = fail_outcome.get("next", None)
                 if _next:
-                    parents = nodes.get(_next)
+                    this_node = nodes.get(name)
+                    childs = this_node.get('childs')
+                    childs.add(_next)
+                    this_node.update({'childs': childs})
+                    nodes.update({name: this_node})
+
+                    child_node = nodes.get(_next)
+                    parents = child_node.get('parents')
                     parents.add(name)
-                    print(_next, parents)
-                    nodes.update({_next: parents})
+                    child_node.update({'parents': parents})
+                    nodes.update({_next: child_node})
+
+                    if _next in roots:
+                        roots.remove(_next)
+
+                    if _next in roots:
+                        roots.remove(_next)
 
         print(nodes)
+        print(roots)
+        if len(roots) != 1:
+            raise ValueError(f"Tree must have only one root: {roots}")
+
+        print(f"Path checking")
+        visited = set()
+        root = list(roots)[0]
+        go_to = nodes.get(root, None)
+        visited.add(root)
+        n = 0
+        # while go_to and n < 5:
+        #     new_goto = set()
+        #     tmp_visited = visited.copy()
+        #     print()
+        #     print(n, go_to)
+        #     for node in go_to:
+        #         childs = nodes.get(node)
+        #         for c in childs:
+        #             new_goto.add(c)
+        #             if c in visited:
+        #                 raise ValueError(f"{c} was visited before {node}")
+        #             else:
+        #                 tmp_visited.add(c)
+        #             print(c)
+        #     visited = tmp_visited
+        #     go_to = new_goto
+        #     n += 1
+
+    #     self.draw_graph()
+
+    # def draw_graph(self):
+    #     G = nx.Graph()
+    #     plt.figure(figsize=(16, 9))
+    #     nx.draw(G)
+    #     plt.show()
 
     def validate_parse(self, rules_to_check):
         size = len(rules_to_check)
@@ -211,6 +274,9 @@ class DecisionTree:
 
 
 dt = DecisionTree()
+
+dt.add_rule('want', "", next_step='worktime')
+dt.add_fail('want', value=0)
 
 dt.add_rule('worktime', "<1", value=5)
 dt.add_rule('worktime', ">=1<10", next_step='criminal')
