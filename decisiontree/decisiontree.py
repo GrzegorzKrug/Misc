@@ -163,9 +163,18 @@ class DecisionTree:
 
     def check_tree(self):
         fkeys = set(self.fail.keys())
-        for key in self.tree.keys():
+        for key, rul_list in self.tree.items():
             if key not in fkeys:
                 warnings.warn(f"{key} has not fail outcome. use 'dt.add_fail()'")
+            for ruld in rul_list:
+                nx = ruld['next']
+                if nx and nx not in self.tree.keys():
+                    raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
+        for key, ruld in self.fail.items():
+            nx = ruld['next']
+            if nx and nx not in self.tree.keys():
+                raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
+
         self.build_hierarchy()
 
     def build_hierarchy(self):
@@ -222,11 +231,40 @@ class DecisionTree:
             raise ValueError(f"Tree must have only one root: {roots}")
 
         print(f"Path checking")
-        visited = set()
         root = list(roots)[0]
-        go_to = nodes.get(root, None)
-        visited.add(root)
+        visited = set([root])
+        goto_nodes = nodes.get(root).get('childs')
+
         n = 0
+        while goto_nodes and n < 10:
+            n += 1
+            next_nodes = set()
+            for cur_name in goto_nodes:
+                if cur_name in visited:
+                    raise ValueError(f"This node was visited! {cur_name}")
+                print(f"visit+: {cur_name}")
+                checking_node = nodes[cur_name]
+                vis_num = checking_node.get('visited', 0) + 1
+                checking_node.update({'visited': vis_num})
+                if 1 >= len(checking_node.get('parents')):
+                    "Adding parents, its only 1, no conflicts"
+                    visited.add(cur_name)
+                    for ch in checking_node.get('childs'):
+                        next_nodes.add(ch)
+                elif vis_num >= len(checking_node.get('parents')):
+                    "Waiting for all paths to join"
+                    visited.add(cur_name)
+                    for ch in checking_node.get('childs'):
+                        next_nodes.add(ch)
+                else:
+                    "Ignore"
+                    print(f"Waiting in: {cur_name}")
+
+            goto_nodes = next_nodes
+        if len(visited) == len(self.tree):
+            print(f"valid")
+        else:
+            print("invalid tree")
         # while go_to and n < 5:
         #     new_goto = set()
         #     tmp_visited = visited.copy()
@@ -235,7 +273,7 @@ class DecisionTree:
         #     for node in go_to:
         #         childs = nodes.get(node)
         #         for c in childs:
-        #             new_goto.add(c)
+        #             new_g   oto.add(c)
         #             if c in visited:
         #                 raise ValueError(f"{c} was visited before {node}")
         #             else:
@@ -287,10 +325,7 @@ dt.add_fail('criminal', next_step='member')
 
 dt.add_rule('member', '<5', value=5)
 dt.add_rule('member', '>=5', value=15)
-dt.add_fail('member', next_step='unhappy')
-
-dt.add_rule('unhappy', '', value=20)
-dt.add_fail('unhappy', value=10)
+dt.add_fail('member', value=15)
 
 dt.check_tree()
 
