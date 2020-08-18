@@ -10,7 +10,8 @@ class DecisionTree:
     def __init__(self):
         self.tree = {}
         self.fail = {}
-        self.symbols = {"<", ">", "<=", ">=", "==", "!="}
+        self.ord_symbols = [r"<=", r">=", r"<", r">", "==", "!="]
+        self.symbols = set(self.ord_symbols)
 
         self.root = None
         self.nodes = None
@@ -19,7 +20,7 @@ class DecisionTree:
         if value and next_step:
             raise ValueError(f"You can select next step or outcome value")
         elif not value and not next_step:
-            raise ValueError(f"Give outcome, or next step")
+            raise ValueError(f"Rule needs outcome, or next step")
         elif value:
             try:
                 value = int(value)
@@ -30,7 +31,7 @@ class DecisionTree:
         if conditions:
             tmp_conditions = conditions
             conditions = conditions.replace(" ", "")
-            pattern = "|".join(self.symbols) + r"|\d+"
+            pattern = "|".join(self.ord_symbols) + r"|\d+"
             conditions = re.findall(pattern, conditions)
 
             if len(conditions) == 1:
@@ -38,7 +39,11 @@ class DecisionTree:
                     num = int(conditions[0])
                 except ValueError as err:
                     print(f"This is not a number: {conditions[0]}")
+                    num = None
                     return False
+                ruld = self.get_ruld(eq=num)
+                ruld.update({"next": next_step, "val": value})
+                self._update_tree_rules(name, ruld)
 
             elif len(conditions) > 1:
                 if not self.validate_parse(conditions):
@@ -142,22 +147,34 @@ class DecisionTree:
         elif sm and sme or big and bige or eq and diff:
             raise ValueError("Can not interpret conditions. Some types are not allowed simultaneously")
 
-        elif sm or sme or big or bige:
+        elif sm or sme or big or bige or diff:
             if sm:
+                sm = int(sm)
                 ruld.update({'sm': sm})
             elif sme:
+                sme = int(sme)
                 ruld.update({'sm': sme})
 
-            if sm:
+            if big:
+                big = int(big)
                 ruld.update({'big': big})
-            elif sme:
+            elif bige:
+                bige = int(bige)
                 ruld.update({'bige': bige})
+
+            if diff:
+                diff = int(diff)
+                ruld.update({'diff': diff})
 
             max_val = sm or sme
             min_val = big or bige
 
             if max_val and min_val and min_val > max_val:
                 raise ValueError(f"Conditions are impossible: {min_val} < {max_val}")
+        elif eq:
+            eq = int(eq)
+            ruld.update({'eq': eq})
+
         return ruld
 
     def _update_tree_rules(self, name, new_rule):
@@ -167,7 +184,7 @@ class DecisionTree:
 
     def build_tree(self):
         self.check_tree_keys()
-        self.check_condition_conflicts()
+        # self.check_condition_conflicts()
         valid, cmt, (root, nodes) = self.check_graph_sequence()
 
         if not valid:
@@ -177,8 +194,102 @@ class DecisionTree:
             self.nodes = nodes
             print(f"Tree is valid, build complete")
 
-    def check_condition_conflicts(self):
-        pass
+    def predict(self, **kwargs):
+        # print(self.root)
+        # print(self.nodes)
+        next_name = self.root
+        print(f"Kwargs: {kwargs}")
+        while next_name:
+            print()
+            print(f"Checking: {next_name}")
+            cur_name = next_name
+            next_name = None
+            outcome = False
+
+            try:
+                value = int(kwargs[cur_name])
+            except KeyError:
+                print(f"Can not predict, value is missing for: {cur_name}")
+            except ValueError:
+                print(f"This is not value: {kwargs[cur_name]}")
+                return None
+
+            cur_node = self.tree.get(cur_name)
+            applies = False
+
+            for rul in cur_node:
+                next_name = rul['next']
+                outcome = rul['val']
+                print(rul)
+                if rul['bl']:
+                    if value:
+                        applies = True
+                    else:
+                        continue
+                elif rul['eq']:
+                    if value == rul['eq']:
+                        applies = True
+                        print(f"equal")
+                    else:
+                        print(f"not equal")
+                        continue
+                else:
+                    if rul['sm']:
+                        v = rul['sm']
+                        if value < v:
+                            applies = True
+                        else:
+                            applies = False
+                            continue
+                    elif rul['sme']:
+                        v = rul['sme']
+                        if value <= v:
+                            applies = True
+                        else:
+                            applies = False
+                            continue
+                    if rul['big']:
+                        v = rul['big']
+                        if value > v:
+                            applies = True
+                        else:
+                            applies = False
+                            continue
+                    elif rul['bige']:
+                        v = rul['bige']
+                        if value >= v:
+                            applies = True
+                        else:
+                            applies = False
+                            continue
+                    if rul['diff']:
+                        v = rul['diff']
+                        if value != v:
+                            applies = True
+                        else:
+                            applies = False
+                            continue
+                    # or rul['sme'] or rul['big'] or rul['bige'] or rul['diff']
+
+                if applies:
+                    break
+
+            if applies:
+                print(f"Applies: {outcome}, {next_name}")
+                if outcome:
+                    return outcome
+                elif next_name:
+                    pass
+            else:
+                fail_cond = self.fail.get(cur_name)
+                print(f"Not apply, {fail_cond}")
+                try:
+                    outcome, next_name = fail_cond['val'], fail_cond['next']
+                except TypeError:
+                    warnings.warn(f"Fail conditions does not exists, returning None, in {cur_name}")
+                    return None
+                if outcome is not None:
+                    return outcome
 
     def check_tree_keys(self):
         fkeys = set(self.fail.keys())
@@ -314,9 +425,8 @@ class DecisionTree:
 
         elif not size % 2:
             return True
-
         else:
-            print("Rules are not even, len:", size)
+            print("Rules are not even, len:", size, rules_to_check)
 
 
 dt = DecisionTree()
@@ -332,10 +442,14 @@ dt.add_rule('criminal', "", value=5)
 dt.add_fail('criminal', next_step='member')
 
 dt.add_rule('member', '<5', value=5)
-dt.add_rule('member', '>=5', value=15)
+dt.add_rule('member', '==8', value=15)
+dt.add_rule('member', '>=5', value=35)
 dt.add_fail('member', value=15)
 
 dt.build_tree()
+
+pred = dt.predict(want=True, worktime=10, criminal=False, member=9)
+print(f"Predicted: {pred}")
 
 # for key, val in dt.tree.items():
 #     print(key, val)
