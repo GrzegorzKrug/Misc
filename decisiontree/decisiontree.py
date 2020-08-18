@@ -175,10 +175,9 @@ class DecisionTree:
             if nx and nx not in self.tree.keys():
                 raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
 
-        self.build_hierarchy()
+        self.check_graph_sequence()
 
-    def build_hierarchy(self):
-        print(f"Building hierarchy")
+    def check_graph_sequence(self):
         nodes = {key: {'visited': 0, 'childs': set(), 'parents': set()}
                  for key in self.tree.keys()}
         roots = set(self.tree.keys())
@@ -225,14 +224,13 @@ class DecisionTree:
                     if _next in roots:
                         roots.remove(_next)
 
-        print(nodes)
-        print(roots)
         if len(roots) != 1:
-            raise ValueError(f"Tree must have only one root: {roots}")
+            err = f"Tree must have only one root: {roots}"
+            print(err)
+            return False, err
 
-        print(f"Path checking")
         root = list(roots)[0]
-        visited = set([root])
+        visited = {root}
         goto_nodes = nodes.get(root).get('childs')
 
         n = 0
@@ -241,49 +239,33 @@ class DecisionTree:
             next_nodes = set()
             for cur_name in goto_nodes:
                 if cur_name in visited:
-                    raise ValueError(f"This node was visited! {cur_name}")
-                print(f"visit+: {cur_name}")
+                    err = f"This node was visited before: {cur_name}"
+                    print(err)
+                    return False, err
+
                 checking_node = nodes[cur_name]
                 vis_num = checking_node.get('visited', 0) + 1
                 checking_node.update({'visited': vis_num})
+
                 if 1 >= len(checking_node.get('parents')):
                     "Adding parents, its only 1, no conflicts"
                     visited.add(cur_name)
                     for ch in checking_node.get('childs'):
                         next_nodes.add(ch)
                 elif vis_num >= len(checking_node.get('parents')):
-                    "Waiting for all paths to join"
+                    "Joining paths"
                     visited.add(cur_name)
                     for ch in checking_node.get('childs'):
                         next_nodes.add(ch)
                 else:
-                    "Ignore"
-                    print(f"Waiting in: {cur_name}")
+                    "Ignore / wait to join"
 
             goto_nodes = next_nodes
-        if len(visited) == len(self.tree):
-            print(f"valid")
-        else:
-            print("invalid tree")
-        # while go_to and n < 5:
-        #     new_goto = set()
-        #     tmp_visited = visited.copy()
-        #     print()
-        #     print(n, go_to)
-        #     for node in go_to:
-        #         childs = nodes.get(node)
-        #         for c in childs:
-        #             new_g   oto.add(c)
-        #             if c in visited:
-        #                 raise ValueError(f"{c} was visited before {node}")
-        #             else:
-        #                 tmp_visited.add(c)
-        #             print(c)
-        #     visited = tmp_visited
-        #     go_to = new_goto
-        #     n += 1
 
-    #     self.draw_graph()
+        if len(visited) == len(self.tree):
+            return True, "Its ok to be ok"
+        else:
+            return False, "Some nodes was not visited"
 
     # def draw_graph(self):
     #     G = nx.Graph()
