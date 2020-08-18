@@ -11,7 +11,9 @@ class DecisionTree:
         self.tree = {}
         self.fail = {}
         self.symbols = {"<", ">", "<=", ">=", "==", "!="}
+
         self.root = None
+        self.nodes = None
 
     def add_rule(self, name, conditions, value=None, next_step=None):
         if value and next_step:
@@ -161,24 +163,38 @@ class DecisionTree:
         current += [new_rule]
         self.tree.update({name: current})
 
-    def check_tree(self):
+    def check_condition_conflicts(self):
+        pass
+
+    def check_tree_keys(self):
         fkeys = set(self.fail.keys())
+        tree_keys = set(self.tree.keys())
+
         for key, rul_list in self.tree.items():
             if key not in fkeys:
                 warnings.warn(f"{key} has not fail outcome. use 'dt.add_fail()'")
             for ruld in rul_list:
                 nx = ruld['next']
-                if nx and nx not in self.tree.keys():
+                if nx and nx not in tree_keys:
                     raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
+
         for key, ruld in self.fail.items():
             nx = ruld['next']
-            if nx and nx not in self.tree.keys():
+            if nx and nx not in tree_keys:
                 raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
 
-        valid, cmt = self.check_graph_sequence()
-        return valid, cmt
+    def build_tree(self):
+        self.check_tree_keys()
+        valid, cmt, (root, nodes) = self.check_graph_sequence()
 
-    def check_graph_sequence(self):
+        if not valid:
+            print(f"{cmt}")
+        else:
+            self.root = root
+            self.nodes = nodes
+            print(f"Tree is valid, build complete")
+
+    def _get_roots_with_nodes(self):
         nodes = {key: {'visited': 0, 'childs': set(), 'parents': set()}
                  for key in self.tree.keys()}
         roots = set(self.tree.keys())
@@ -223,6 +239,10 @@ class DecisionTree:
 
                     if _next in roots:
                         roots.remove(_next)
+        return roots, nodes
+
+    def check_graph_sequence(self):
+        roots, nodes = self._get_roots_with_nodes()
 
         if len(roots) != 1:
             err = f"Tree must have only one root: {roots}"
@@ -263,18 +283,16 @@ class DecisionTree:
             goto_nodes = next_nodes
 
         if len(visited) == len(self.tree):
-            return True, "Its ok to be ok"
+            return True, "Its ok to be ok", (root, nodes)
         else:
-            return False, "Some nodes was not visited"
+            return False, "Some nodes was not visited", (None, None)
 
     def draw_graph(self):
         G = nx.Graph()
+        # roots, nodes = self._get_roots_with_nodes()
         plt.figure(figsize=(16, 9))
         nx.draw(G)
         plt.show()
-
-    def prepare_tree(self):
-        pass
 
     def validate_parse(self, rules_to_check):
         size = len(rules_to_check)
@@ -312,8 +330,7 @@ dt.add_rule('member', '<5', value=5)
 dt.add_rule('member', '>=5', value=15)
 dt.add_fail('member', value=15)
 
-valid = dt.check_tree()
-print(f"Valid: {valid}")
+dt.build_tree()
 
 # for key, val in dt.tree.items():
 #     print(key, val)
