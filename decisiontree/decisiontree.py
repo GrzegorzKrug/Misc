@@ -11,7 +11,7 @@ class DecisionTree:
         self.tree = {}
         self.fail = {}
         self.symbols = {"<", ">", "<=", ">=", "==", "!="}
-        print(self.symbols)
+        self.root = None
 
     def add_rule(self, name, conditions, value=None, next_step=None):
         if value and next_step:
@@ -175,13 +175,13 @@ class DecisionTree:
             if nx and nx not in self.tree.keys():
                 raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
 
-        self.check_graph_sequence()
+        valid, cmt = self.check_graph_sequence()
+        return valid, cmt
 
     def check_graph_sequence(self):
         nodes = {key: {'visited': 0, 'childs': set(), 'parents': set()}
                  for key in self.tree.keys()}
         roots = set(self.tree.keys())
-
         for name, rules in self.tree.items():
             "Removing non roots from roots, creating child, parent relations"
             for rul in rules:
@@ -267,11 +267,14 @@ class DecisionTree:
         else:
             return False, "Some nodes was not visited"
 
-    # def draw_graph(self):
-    #     G = nx.Graph()
-    #     plt.figure(figsize=(16, 9))
-    #     nx.draw(G)
-    #     plt.show()
+    def draw_graph(self):
+        G = nx.Graph()
+        plt.figure(figsize=(16, 9))
+        nx.draw(G)
+        plt.show()
+
+    def prepare_tree(self):
+        pass
 
     def validate_parse(self, rules_to_check):
         size = len(rules_to_check)
@@ -309,7 +312,8 @@ dt.add_rule('member', '<5', value=5)
 dt.add_rule('member', '>=5', value=15)
 dt.add_fail('member', value=15)
 
-dt.check_tree()
+valid = dt.check_tree()
+print(f"Valid: {valid}")
 
 # for key, val in dt.tree.items():
 #     print(key, val)
