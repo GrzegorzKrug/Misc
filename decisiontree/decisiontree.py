@@ -15,9 +15,9 @@ class DecisionTree:
         self.root = None
         self.nodes = None
 
-    def add_rule(self, name, conditions, value=None, next_step=None):
+    def add_rule(self, name, conditions=None, value=None, next_step=None):
         if value and next_step:
-            raise ValueError(f"You can select next step or return output value")
+            raise ValueError(f"You can select next step or outcome value")
         elif not value and not next_step:
             raise ValueError(f"Give outcome, or next step")
         elif value:
@@ -111,7 +111,9 @@ class DecisionTree:
             self._add_bool(name, value, next_step)
 
     def add_fail(self, name, value=None, next_step=None):
-        if name in self.fail.keys():
+        if value and next_step:
+            raise ValueError(f"Can not set value and next step as fail outcome for: {name}")
+        elif name in self.fail.keys():
             warnings.warn(f"Overwriting fail outcome: {name}")
         self.fail.update({name: {'val': value, 'next': next_step}})
 
@@ -163,6 +165,18 @@ class DecisionTree:
         current += [new_rule]
         self.tree.update({name: current})
 
+    def build_tree(self):
+        self.check_tree_keys()
+        self.check_condition_conflicts()
+        valid, cmt, (root, nodes) = self.check_graph_sequence()
+
+        if not valid:
+            print(f"Not valid: {cmt}, there is cycle in tree")
+        else:
+            self.root = root
+            self.nodes = nodes
+            print(f"Tree is valid, build complete")
+
     def check_condition_conflicts(self):
         pass
 
@@ -183,21 +197,11 @@ class DecisionTree:
             if nx and nx not in tree_keys:
                 raise ValueError(f"This next step does not exist: '{nx}' in '{key}' rules")
 
-    def build_tree(self):
-        self.check_tree_keys()
-        valid, cmt, (root, nodes) = self.check_graph_sequence()
-
-        if not valid:
-            print(f"{cmt}")
-        else:
-            self.root = root
-            self.nodes = nodes
-            print(f"Tree is valid, build complete")
-
     def _get_roots_with_nodes(self):
         nodes = {key: {'visited': 0, 'childs': set(), 'parents': set()}
                  for key in self.tree.keys()}
         roots = set(self.tree.keys())
+
         for name, rules in self.tree.items():
             "Removing non roots from roots, creating child, parent relations"
             for rul in rules:
@@ -285,7 +289,8 @@ class DecisionTree:
         if len(visited) == len(self.tree):
             return True, "Its ok to be ok", (root, nodes)
         else:
-            return False, "Some nodes was not visited", (None, None)
+            not_vis = [node for node in nodes if node not in visited]
+            return False, f"Some nodes was not visited {not_vis}", (None, None)
 
     def draw_graph(self):
         G = nx.Graph()
