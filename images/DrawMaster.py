@@ -65,38 +65,108 @@ class DrawMaster:
             for y in range(Y, Y + size):
                 self.pixel((x, y), color)
 
-    def draw_hexagon_board(self):
-        big_size = 120
+    def draw_hex_grid(self, tile_size=50, color=(0, 0, 0), width=10):
+        cx, cy = self.center
 
-        width = 10
-        "Big main"
-        self.draw_hexagon(*self.center, big_size, color=(255, 160, 0), width=width)
+        for direction in [1,2,3,4,5,6]:
+            self.draw_recurent_hexes(cx, cy, tile_size, color, width,
+                                     cur_dir=direction, cur_depth=0, max_depth=5)
+        self.draw_hexagon(cx, cy, tile_size, color=(
+            255, 255, 255), width=width)
+
+    def draw_recurent_hexes(self, cx, cy, tile_size, color, width,
+                            cur_dir, cur_depth, max_depth=10):
+        point = self.get_hexagon_offset(cx, cy, tile_size, cur_dir)
+        color = (25 * cur_dir, cur_dir % 3 * 25, cur_dir % 4 * 60)
+        self.draw_hexagon(*point, tile_size, color=color, width=width)
+        if cur_depth + 1 < max_depth:
+            if cur_dir == 1:
+                pass
+                self.draw_recurent_hexes(*point, tile_size, color, width, 1, cur_depth+1, max_depth)
+                self.draw_recurent_hexes(*point, tile_size, color, width, 2, cur_depth+1, max_depth)
+                # self.draw_recurent_hexes(*point, tile_size, color, width, 6, cur_depth+1, max_depth)
+            elif cur_dir == 2:
+                self.draw_recurent_hexes(*point, tile_size, color, width, 2, cur_depth+1, max_depth)
+            elif cur_dir == 3:
+                self.draw_recurent_hexes(*point, tile_size, color, width, 2, cur_depth+1, max_depth)
+                self.draw_recurent_hexes(*point, tile_size, color, width, 3, cur_depth+1, max_depth)
+                # self.draw_recurent_hexes(*point, tile_size, color, width, 4, cur_depth+1, max_depth)
+            elif cur_dir == 4:
+                self.draw_recurent_hexes(*point, tile_size, color, width, 4, cur_depth+1, max_depth)
+                self.draw_recurent_hexes(*point, tile_size, color, width, 5, cur_depth+1, max_depth)
+            elif cur_dir == 5:
+                self.draw_recurent_hexes(*point, tile_size, color, width, 5, cur_depth+1, max_depth)
+            elif cur_dir == 6:
+                self.draw_recurent_hexes(*point, tile_size, color, width, 5, cur_depth+1, max_depth)
+                self.draw_recurent_hexes(*point, tile_size, color, width, 6, cur_depth+1, max_depth)
+            else:
+                pass
+
+        # p1 = self.get_hexagon_offset(cx, cy, tile_size, 2)
+        # self.draw_hexagon(*p1, tile_size, color=color, width=width)
+        # p1 = self.get_hexagon_offset(cx, cy, tile_size, 3)
+        # self.draw_hexagon(*p1, tile_size, color=color, width=width)
+        # p1 = self.get_hexagon_offset(cx, cy, tile_size, 4)
+        # self.draw_hexagon(*p1, tile_size, color=color, width=width)
+        # p1 = self.get_hexagon_offset(cx, cy, tile_size, 5)
+        # self.draw_hexagon(*p1, tile_size, color=color, width=width)
+        # p1 = self.get_hexagon_offset(cx, cy, tile_size, 6)
+        # self.draw_hexagon(*p1, tile_size, color=color, width=width)
+
+    def draw_flower(self, origin, big_size=300, width=10):
+        self.draw_hexagon(*origin, big_size,
+                          color=(255, 160, 0), width=width)
         "Surroundings"
-        self.draw_smaller_hexes(self.center, 60, 300, big_size, width)
-        self.draw_smaller_hexes(self.center, 60, 180, big_size, width)
-        self.draw_smaller_hexes(self.center, 120, 240, big_size, width)
-        self.draw_smaller_hexes(self.center, 240, 120, big_size, width)
-        self.draw_smaller_hexes(self.center, 300, 180, big_size, width)
-        self.draw_smaller_hexes(self.center, 300, 60, big_size, width)
+        self.draw_smaller_hexes(origin, 1, big_size, width)
+        self.draw_smaller_hexes(origin, 2, big_size, width)
+        self.draw_smaller_hexes(origin, 3, big_size, width)
+        self.draw_smaller_hexes(origin, 4, big_size, width)
+        self.draw_smaller_hexes(origin, 5, big_size, width)
+        self.draw_smaller_hexes(origin, 6, big_size, width)
 
-
-    def draw_smaller_hexes(self, origin, angle, direction, big_size, width):
+    def draw_smaller_hexes(self, origin, edge, big_size, width):
         small_size = big_size//3
-        point = self.relative_point(*origin, angle, distance=big_size+small_size+width)
-        point = self.relative_point(*point, direction, distance=small_size+width//2)
-        print(-angle)        
-        self.draw_hexagon(*point, small_size, color=(255, 60, 150), width=width//2)
-        point = self.relative_point(*point, direction, distance=small_size*2)
-        self.draw_hexagon(*point, small_size, color=(255, 60, 150), width=width//2)
+        Edges = {1: (60, 300), 2: (60, 180), 3: (120, 240),
+                 4: (240, 120), 5: (300, 180), 6: (300, 60)}
+        angle, direction = Edges[edge]
 
-        # mini = self.relative_point(*self.center, -60, distance=big_size-small_size)
-        # self.draw_hexagon(*mini, 40, color=(255, 60, 150), width=5)
+        point = self.relative_point(*origin, angle,
+                                    distance=big_size+small_size+width)
+        point = self.relative_point(*point, direction,
+                                    distance=small_size+width//2
+                                    )
+        point2 = self.relative_point(*point, direction, distance=small_size*2)
 
-        # point = self.relative_point(*mini, 60, distance=small_size*2)
-        # self.draw_hexagon(*point, 40, color=(255, 60, 150), width=5)
+        self.draw_hexagon(*point, small_size,
+                          color=(255, 60, 150), width=width//2)
+        self.draw_hexagon(*point2, small_size,
+                          color=(255, 60, 150), width=width//2)
+
+    @staticmethod
+    def get_hexagon_offset(x0, y0, radius, edge):
+        xoffset = radius*3//2
+        yoffset = np.sqrt(3)*radius//2
+        if edge == 1:
+            x1 = x0 + xoffset
+            y1 = y0 - yoffset
+        elif edge == 2:
+            x1 = x0
+            y1 = y0 - yoffset*2
+        elif edge == 3:
+            x1 = x0 - xoffset
+            y1 = y0 - yoffset
+        elif edge == 4:
+            x1 = x0 - xoffset
+            y1 = y0 + yoffset
+        elif edge == 5:
+            x1 = x0
+            y1 = y0 + yoffset*2
+        elif edge == 6:
+            x1 = x0 + xoffset
+            y1 = y0 + yoffset
+        return x1, y1
 
     def draw_hexagon(self, x0, y0, radius, color=(0, 0, 0), width=5):
-
         first = self.relative_point(x0, y0, 60, distance=radius)
         end_point = self.draw_line_angle(
             *first, 300, radius, color=color, width=width)
@@ -148,7 +218,7 @@ class DrawMaster:
 if __name__ == "__main__":
     width, height = 900, 900
     App = DrawMaster(size=(width, height), background=(80, 120, 150))
-    App.draw_hexagon_board()
+    App.draw_hex_grid()
     App.save()
 
     print('\nEnd!!!'*5)
